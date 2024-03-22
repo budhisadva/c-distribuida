@@ -55,7 +55,7 @@ void bfs(int rank, int size, int target) {
         printf("mensaje: MASTER -> nodo %i\n", i);
       }
     }
-  } /*
+  }/*
   else {
     // ----------------------
     MPI_Recv(mensaje, size+1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
