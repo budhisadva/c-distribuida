@@ -19,16 +19,6 @@ void init_rand() {
 }
 
 /**
- *
- */
-int* creaArreglo(int tam){
-  int V[tam];
-  for (int i = 0; i < tam; i++) {
-    V[i] = 7;
-  }
-  return V;
-}
-/**
  * Función que determina si dos nodos están conectados
  * @param u, indice del nodo de referencia
  * @param v, indice del nodo a comprobar
@@ -49,11 +39,10 @@ int conectado(int u, int v, int s){
  * @param target, indice del nodo que buscamos
  */
 void dfs(int rank, int size, int target) {
-  int* visitado = creaArreglo(size+1);
+  int visitado[size+1];
+  MPI_Bcast(&visitado, size, MPI_INT, MASTER, MPI_COMM_WORLD);
   if (rank == 0) {
-    for (int i = 0; i < size; i++) {
-      printf("%i \n", visitado[i]);
-    }
+    /* code */
   }
 }
 
