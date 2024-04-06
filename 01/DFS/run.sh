@@ -1,3 +1,3 @@
 #!/bin/bash
 mpicc dfs.c
-mpirun --oversubscribe -np 3 a.out
+mpirun --oversubscribe -np 5 a.out
