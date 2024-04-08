@@ -11,9 +11,7 @@
 #define TAG_IGNORE 0
 #define TAG_SUCESS 1
 #define TAG_NOT_FOUND 2
-/**
- *
- */
+
 /**
  * Inicializa la funcion random
  */
