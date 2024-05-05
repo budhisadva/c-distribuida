@@ -31,6 +31,11 @@ int nodosVivos(int n, int *protocolo){
  * @return:
  */
 void nodosCaidos(int n, int lider_caido, int *protocolo){
+  protocolo[n] = 0;
+  protocolo[n+1] = 0;
+  for (int i = 0; i < n; i++) {
+    protocolo[i] = 1;
+  }
   protocolo[lider_caido] = 0;
   div_t r = div(n, 2);
   int nodosCaidos = (int) (rand()%r.quot)+1;
@@ -40,21 +45,35 @@ void nodosCaidos(int n, int lider_caido, int *protocolo){
 }
 
 /**
+ * Funcion que define que nodo va a convocar a eleciones
+ * @param n, tamaño de la red
+ * @param protocolo, arreglo que define el estado de la red
+ */
+void eligeConvocante(int n, int *protocolo) {
+  int convocante = 0;
+  while (!protocolo[n+1]) {
+    convocante = (int) rand()%n;
+    protocolo[n+1] = protocolo[convocante];
+  }
+  protocolo[n+1] = convocante;
+}
+
+/**
  * Funcion principal
  * @param n, tamaño de la red.
  * @param id, identificador del nodo que invoca la funcion.
  * @param lider_caido
  */
 void abuson(int n, int id, int lider_caido) {
-  int protocolo[n+1];
+  int protocolo[n+2];
   if (id == lider_caido) {
-    for (int i = 0; i < n; i++) {
-      protocolo[i] = 1;
-    }
     nodosCaidos(n, lider_caido, protocolo);
+    eligeConvocante(n, protocolo);
   }
-  MPI_Bcast(protocolo, n+1, MPI_INT, lider_caido, MPI_COMM_WORLD);
-  // paso 2
+  MPI_Bcast(protocolo, n+2, MPI_INT, lider_caido, MPI_COMM_WORLD);
+  if (id == protocolo[n+1]) {
+    // algoritmo elecciones
+  }
 }
 
 int main(int argc, char* argv[]) {
