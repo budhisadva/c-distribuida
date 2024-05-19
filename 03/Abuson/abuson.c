@@ -86,11 +86,10 @@ void eligeConvocante(int n, int *protocolo) {
  */
 int noFallidoMasAlto(int n, int *protocolo){
   int i = 0, nodo = 0;
-  while (i < n) {
+  for (int i = 0; i < n; i++) {
     if (protocolo[i]) {
       nodo = i;
     }
-    i++;
   }
   return nodo;
 }
@@ -110,17 +109,27 @@ void elecciones(int n, int id, int *protocolo) {
     protocolo[n] = id;
     for (int i = 0; i < id; i++) {
       printf(">Nodo %i [COORDINADOR]: => Nodo %i, tipo COORDINADOR\n", id, i);
-      MPI_Send(&protocolo, n+2, MPI_INT, i, COORDINADOR, MPI_COMM_WORLD);
+      MPI_Send(protocolo, n+2, MPI_INT, i, COORDINADOR, MPI_COMM_WORLD);
     }
   } else {
     // 2. Manda un mensaje elección a todos los de id más alto y espera un mensaje respuesta
     for (int i = id+1; i < n; i++) {
       printf(">Nodo %i [CONVOCANTE]: => Nodo %i, tipo ELECCION\n", id, i);
-      MPI_Send(&protocolo, n+2, MPI_INT, i, ELECCION, MPI_COMM_WORLD);
+      MPI_Send(protocolo, n+2, MPI_INT, i, ELECCION, MPI_COMM_WORLD);
     }
     printf(">Nodo %i [CONVOCANTE]: En espera de RESPUESTA\n", id);
     // Simular timeout
-    MPI_Recv(&protocolo, n+2, MPI_INT, MPI_ANY_SOURCE, RESPUESTA, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Request recv_request;
+    int estado = 0;
+    MPI_Irecv(&protocolo, n+2, MPI_INT, MPI_ANY_SOURCE, RESPUESTA, MPI_COMM_WORLD, &recv_request);
+    time_t inicio = time(NULL);
+    while (!estado) {
+      MPI_Test(&recv_request, &estado, &status);
+      if (difftime(time(NULL), inicio) >= 7) {
+        MPI_Cancel(&recv_request);
+        MPI_Request_free(&recv_request);
+      }
+    }
     printf(">Nodo %i [CONVOCANTE]: En espera de COORDINADOR\n", id);
     MPI_Recv(&protocolo, n+2, MPI_INT, MPI_ANY_SOURCE, COORDINADOR, MPI_COMM_WORLD, &status);
     printf(">Nodo %i [CONVOCANTE]: Nuevo coordinador recibido\n", id);
@@ -144,19 +153,21 @@ void abuson(int n, int id, int lider_caido) {
   MPI_Bcast(&protocolo, n+2, MPI_INT, lider_caido, MPI_COMM_WORLD);
   // En caso de que sea el nodo convocante
   if (id == protocolo[n+1]) {
-    printf(">Nodo %i [CONVOCANTE]: Lider caido\n", id);
+    printf(">Nodo %i [CONVOCANTE]: Nodo %i [LIDER CAIDO]\n", id, lider_caido);
+    printf("%s\n", "RED:");
     imprimeEstadoNodos(n, protocolo);
     elecciones(n, id, protocolo);
   } else {
     if (protocolo[id]) {
       MPI_Status status;
       MPI_Recv(&protocolo, n+2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-      if (status.MPI_TAG == 0) {
+      if (status.MPI_TAG == ELECCION) {
+        MPI_Request send_request;
         printf(">Nodo %i: <= Nodo %d, de tipo ELECCION\n", id, status.MPI_SOURCE);
-        MPI_Send(&protocolo, n+2, MPI_INT, status.MPI_SOURCE, RESPUESTA, MPI_COMM_WORLD);
+        MPI_Send(protocolo, n+2, MPI_INT, status.MPI_SOURCE, RESPUESTA, MPI_COMM_WORLD);
         printf(">Nodo %i: => Nodo %d, de tipo RESPUESTA\n", id, status.MPI_SOURCE);
         elecciones(n, id, protocolo);
-      } else if (status.MPI_TAG == 2) {
+      } else if (status.MPI_TAG == COORDINADOR) {
         printf(">Nodo %i: <= Nodo %d, de tipo COORDINADOR\n", id, status.MPI_SOURCE);
         protocolo[n] = (int) status.MPI_SOURCE;
       }
